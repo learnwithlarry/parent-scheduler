@@ -324,7 +324,10 @@
 <script>
 const CONFIG = {
   SUBMIT_ENDPOINT:    "https://lwl-notion-proxy.larry-109.workers.dev",
-  GOOGLE_ICAL_URL:    "https://calendar.google.com/calendar/ical/larry%40learnwithlarry.me/private-6a046e731a275c181ad795042b10f0e2/basic.ics",
+  GOOGLE_ICAL_URLS: [
+    "https://calendar.google.com/calendar/ical/larry%40learnwithlarry.me/private-6a046e731a275c181ad795042b10f0e2/basic.ics",
+    "https://calendar.google.com/calendar/ical/hiphopfoxtrot%40gmail.com/private-135417dd5dc65b3110f435f424ae193a/basic.ics",
+  ],
   SLOT_START_HOUR: 9,
   SLOT_END_HOUR:  20,
   SLOT_INTERVAL:  15,
@@ -802,13 +805,17 @@ function loadBusyAndPopulate(id, key, date, row) {
 // so the overlap check is straightforward.
 let icalCachePromise = null;
 function fetchIcalBusyBlocks() {
-  // Always re-fetch; don't cache stale results across deploys
   if (icalCachePromise) return icalCachePromise;
-  const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.GOOGLE_ICAL_URL)}&t=${Date.now()}`;
-  icalCachePromise = fetch(proxied)
-    .then(r => r.text())
-    .then(text => parseIcalToBusyBlocks(text))
-    .catch(err => { icalCachePromise = null; return []; });
+  // Fetch all calendars in parallel and merge their busy blocks
+  icalCachePromise = Promise.all(
+    CONFIG.GOOGLE_ICAL_URLS.map(url => {
+      const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+      return fetch(proxied)
+        .then(r => r.text())
+        .then(text => parseIcalToBusyBlocks(text))
+        .catch(() => []); // if one calendar fails, don't break the other
+    })
+  ).then(results => results.flat()); // merge all busy blocks into one array
   return icalCachePromise;
 }
 
