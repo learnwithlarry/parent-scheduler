@@ -811,6 +811,8 @@ function fetchIcalBusyBlocks() {
   return icalCachePromise;
 }
 
+function toFractionalHour(t) { return t.h + t.mi / 60; }
+
 function generateSlots(date, busy) {
   const slots = [];
   const { SLOT_START_HOUR, SLOT_END_HOUR, SLOT_INTERVAL } = CONFIG;
