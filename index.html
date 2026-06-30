@@ -797,29 +797,25 @@ function loadBusyAndPopulate(id, key, date, row) {
 }
 
 // ── iCal feed fetching & parsing ────────────────────────────────
-// Google's public iCal feeds don't send CORS headers, so browsers can't
-// fetch them directly from client-side JS. We route through a free public
-// CORS proxy (allorigins.win) to read the raw .ics text.
+// Google's iCal feeds don't send CORS headers, so we route through
+// a free public proxy. All times are normalised to Pacific local time
+// so the overlap check is straightforward.
 let icalCachePromise = null;
 function fetchIcalBusyBlocks() {
+  // Always re-fetch; don't cache stale results across deploys
   if (icalCachePromise) return icalCachePromise;
-
-  const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.GOOGLE_ICAL_URL)}`;
-
+  const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.GOOGLE_ICAL_URL)}&t=${Date.now()}`;
   icalCachePromise = fetch(proxied)
     .then(r => r.text())
     .then(text => parseIcalToBusyBlocks(text))
-    .catch(err => { icalCachePromise = null; throw err; });
-
+    .catch(err => { icalCachePromise = null; return []; });
   return icalCachePromise;
 }
 
 function parseIcalToBusyBlocks(icsText) {
   const events = [];
-  // Normalize line folding (iCal wraps long lines with a leading space)
   const unfolded = icsText.replace(/\r\n /g, "").replace(/\n /g, "");
   const lines = unfolded.split(/\r\n|\n/);
-
   let current = null;
   for (const line of lines) {
     if (line.startsWith("BEGIN:VEVENT")) {
@@ -828,85 +824,102 @@ function parseIcalToBusyBlocks(icsText) {
       if (current && current.start && current.end) events.push(current);
       current = null;
     } else if (current) {
-      if (line.startsWith("DTSTART")) current.start = parseIcalDate(line);
-      else if (line.startsWith("DTEND")) current.end = parseIcalDate(line);
+      if (line.startsWith("DTSTART"))         current.start = parseIcalDate(line);
+      else if (line.startsWith("DTEND"))      current.end   = parseIcalDate(line);
       else if (line.startsWith("STATUS:CANCELLED")) current.cancelled = true;
     }
   }
-
   return events.filter(e => !e.cancelled && e.start && e.end);
 }
 
+// Returns a plain object { y, mo, d, h, mi } in Pacific local time,
+// so we can compare directly against the slot hours the page displays.
 function parseIcalDate(line) {
-  // Examples:
-  //   DTSTART:20260715T160000Z                        (UTC)
-  //   DTSTART;TZID=America/Los_Angeles:20260715T160000 (Pacific time)
-  //   DTSTART;VALUE=DATE:20260715                      (all-day event)
-
-  // Extract TZID if present
-  const tzMatch = line.match(/TZID=([^:;]+)/);
-  const tzid = tzMatch ? tzMatch[1] : null;
-
-  // Value is always after the last colon
+  const tzMatch   = line.match(/TZID=([^:;]+)/);
+  const tzid      = tzMatch ? tzMatch[1] : null;
   const valuePart = line.split(":").pop().trim();
 
+  // All-day event: YYYYMMDD — treat as midnight Pacific
   if (/^\d{8}$/.test(valuePart)) {
-    // All-day: block the entire day in local time
-    const y = +valuePart.slice(0,4), m = +valuePart.slice(4,6), d = +valuePart.slice(6,8);
-    return new Date(y, m - 1, d);
+    const y = +valuePart.slice(0,4), mo = +valuePart.slice(4,6), d = +valuePart.slice(6,8);
+    return { y, mo, d, h: 0, mi: 0, allDay: true };
   }
 
   const match = valuePart.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
   if (!match) return null;
-  const [, y, mo, d, h, mi, s, isUtc] = match;
+  const [, y, mo, d, h, mi, , isUtc] = match;
 
   if (isUtc) {
-    // Already UTC — parse directly
-    return new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
+    // Convert UTC → Pacific local time
+    const utcMs = Date.UTC(+y, +mo-1, +d, +h, +mi, 0);
+    const pac   = new Date(utcMs);
+    // Use Intl to get the real Pacific wall-clock time (handles DST automatically)
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).formatToParts(pac);
+    const get = type => +parts.find(p => p.type === type).value;
+    return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour") % 24, mi: get("minute") };
   }
 
   if (tzid && tzid.includes("Los_Angeles")) {
-    // Determine whether Pacific Daylight (UTC-7) or Pacific Standard (UTC-8) applies.
-    // PDT: second Sunday of March → first Sunday of November
-    // We check the actual date to pick the right offset.
-    const testDate = new Date(+y, +mo - 1, +d);
-    const offset = isPDT(testDate) ? 7 : 8; // hours behind UTC
-    return new Date(Date.UTC(+y, +mo - 1, +d, +h + offset, +mi, +s));
+    // Already in Pacific time — use as-is
+    return { y: +y, mo: +mo, d: +d, h: +h, mi: +mi };
   }
 
-  // Fallback: treat as local browser time
-  return new Date(+y, +mo - 1, +d, +h, +mi, +s);
+  // Fallback: assume local browser time
+  const loc = new Date(+y, +mo-1, +d, +h, +mi);
+  return { y: loc.getFullYear(), mo: loc.getMonth()+1, d: loc.getDate(), h: loc.getHours(), mi: loc.getMinutes() };
 }
 
-function isPDT(date) {
-  // PDT starts: 2nd Sunday of March at 2:00 AM
-  // PDT ends:   1st Sunday of November at 2:00 AM
-  const year = date.getFullYear();
-
-  const march = new Date(year, 2, 1);
-  const marchDow = march.getDay(); // 0=Sun
-  const dstStart = new Date(year, 2, (marchDow === 0 ? 8 : 8 + (7 - marchDow)));
-
-  const nov = new Date(year, 10, 1);
-  const novDow = nov.getDay();
-  const dstEnd = new Date(year, 10, (novDow === 0 ? 1 : 1 + (7 - novDow)));
-
-  return date >= dstStart && date < dstEnd;
+// Convert our Pacific-time object to fractional hours for easy comparison
+function toFractionalHour(t) {
+  return t.h + t.mi / 60;
 }
 
 function generateSlots(date, busy) {
   const slots = [];
   const { SLOT_START_HOUR, SLOT_END_HOUR, SLOT_INTERVAL } = CONFIG;
+
+  // Filter busy blocks to only those on this calendar date in Pacific time
+  const y  = date.getFullYear();
+  const mo = date.getMonth() + 1;
+  const d  = date.getDate();
+
+  // For each busy block, figure out its Pacific-time span on this date
+  const dayBusy = busy.map(b => {
+    // All-day events block the whole day
+    if (b.start.allDay) {
+      // all-day end is exclusive (next day), so check if this date is within range
+      const startMs = Date.UTC(b.start.y, b.start.mo-1, b.start.d);
+      const endMs   = Date.UTC(b.end.y,   b.end.mo-1,   b.end.d);
+      const dayMs   = Date.UTC(y, mo-1, d);
+      if (dayMs >= startMs && dayMs < endMs) return { startH: 0, endH: 24 };
+      return null;
+    }
+    // Multi-day spanning events: clamp to this date
+    const startOnDay = (b.start.y === y && b.start.mo === mo && b.start.d === d);
+    const endOnDay   = (b.end.y   === y && b.end.mo   === mo && b.end.d   === d);
+    const spanDay    = (
+      Date.UTC(b.start.y, b.start.mo-1, b.start.d) <  Date.UTC(y, mo-1, d+1) &&
+      Date.UTC(b.end.y,   b.end.mo-1,   b.end.d)   >  Date.UTC(y, mo-1, d)
+    );
+    if (!spanDay) return null;
+    const startH = startOnDay ? toFractionalHour(b.start) : 0;
+    const endH   = endOnDay   ? toFractionalHour(b.end)   : 24;
+    return { startH, endH };
+  }).filter(Boolean);
+
   for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
     for (let m = 0; m < 60; m += SLOT_INTERVAL) {
       if (h === SLOT_END_HOUR && m > 0) break;
-      // Build slot start/end in local browser time
-      const s = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
-      const e = new Date(s.getTime() + SLOT_INTERVAL * 60000);
-      const label = s.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit", hour12:true });
-      // Compare in UTC milliseconds — works correctly as long as both sides
-      // are converted to UTC (busy blocks from parseIcalDate, slots from local Date)
-      slots.push({ label, booked: busy.some(b => s < b.end && e > b.start) });
+      const slotStart = h + m / 60;
+      const slotEnd   = slotStart + SLOT_INTERVAL / 60;
+      const label = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m)
+        .toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit", hour12:true });
+      const booked = dayBusy.some(b => slotStart < b.endH && slotEnd > b.startH);
+      slots.push({ label, booked });
     }
   }
   return slots;
