@@ -324,10 +324,6 @@
 <script>
 const CONFIG = {
   SUBMIT_ENDPOINT:    "https://lwl-notion-proxy.larry-109.workers.dev",
-  GOOGLE_ICAL_URLS: [
-    "https://calendar.google.com/calendar/ical/larry%40learnwithlarry.me/private-6a046e731a275c181ad795042b10f0e2/basic.ics",
-    "https://calendar.google.com/calendar/ical/hiphopfoxtrot%40gmail.com/private-135417dd5dc65b3110f435f424ae193a/basic.ics",
-  ],
   SLOT_START_HOUR: 9,
   SLOT_END_HOUR:  20,
   SLOT_INTERVAL:  15,
@@ -806,83 +802,13 @@ function loadBusyAndPopulate(id, key, date, row) {
 let icalCachePromise = null;
 function fetchIcalBusyBlocks() {
   if (icalCachePromise) return icalCachePromise;
-  // Fetch all calendars in parallel and merge their busy blocks
-  icalCachePromise = Promise.all(
-    CONFIG.GOOGLE_ICAL_URLS.map(url => {
-      const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
-      return fetch(proxied)
-        .then(r => r.text())
-        .then(text => parseIcalToBusyBlocks(text))
-        .catch(() => []); // if one calendar fails, don't break the other
-    })
-  ).then(results => results.flat()); // merge all busy blocks into one array
+  // Fetch busy blocks from our Worker, which proxies both iCal feeds
+  // server-side — no third-party proxy needed, no CORS issues.
+  icalCachePromise = fetch(CONFIG.SUBMIT_ENDPOINT + "/calendar")
+    .then(r => r.json())
+    .then(data => data.busy || [])
+    .catch(() => { icalCachePromise = null; return []; });
   return icalCachePromise;
-}
-
-function parseIcalToBusyBlocks(icsText) {
-  const events = [];
-  const unfolded = icsText.replace(/\r\n /g, "").replace(/\n /g, "");
-  const lines = unfolded.split(/\r\n|\n/);
-  let current = null;
-  for (const line of lines) {
-    if (line.startsWith("BEGIN:VEVENT")) {
-      current = {};
-    } else if (line.startsWith("END:VEVENT")) {
-      if (current && current.start && current.end) events.push(current);
-      current = null;
-    } else if (current) {
-      if (line.startsWith("DTSTART"))         current.start = parseIcalDate(line);
-      else if (line.startsWith("DTEND"))      current.end   = parseIcalDate(line);
-      else if (line.startsWith("STATUS:CANCELLED")) current.cancelled = true;
-    }
-  }
-  return events.filter(e => !e.cancelled && e.start && e.end);
-}
-
-// Returns a plain object { y, mo, d, h, mi } in Pacific local time,
-// so we can compare directly against the slot hours the page displays.
-function parseIcalDate(line) {
-  const tzMatch   = line.match(/TZID=([^:;]+)/);
-  const tzid      = tzMatch ? tzMatch[1] : null;
-  const valuePart = line.split(":").pop().trim();
-
-  // All-day event: YYYYMMDD — treat as midnight Pacific
-  if (/^\d{8}$/.test(valuePart)) {
-    const y = +valuePart.slice(0,4), mo = +valuePart.slice(4,6), d = +valuePart.slice(6,8);
-    return { y, mo, d, h: 0, mi: 0, allDay: true };
-  }
-
-  const match = valuePart.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
-  if (!match) return null;
-  const [, y, mo, d, h, mi, , isUtc] = match;
-
-  if (isUtc) {
-    // Convert UTC → Pacific local time
-    const utcMs = Date.UTC(+y, +mo-1, +d, +h, +mi, 0);
-    const pac   = new Date(utcMs);
-    // Use Intl to get the real Pacific wall-clock time (handles DST automatically)
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Los_Angeles",
-      year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", hour12: false
-    }).formatToParts(pac);
-    const get = type => +parts.find(p => p.type === type).value;
-    return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour") % 24, mi: get("minute") };
-  }
-
-  if (tzid && tzid.includes("Los_Angeles")) {
-    // Already in Pacific time — use as-is
-    return { y: +y, mo: +mo, d: +d, h: +h, mi: +mi };
-  }
-
-  // Fallback: assume local browser time
-  const loc = new Date(+y, +mo-1, +d, +h, +mi);
-  return { y: loc.getFullYear(), mo: loc.getMonth()+1, d: loc.getDate(), h: loc.getHours(), mi: loc.getMinutes() };
-}
-
-// Convert our Pacific-time object to fractional hours for easy comparison
-function toFractionalHour(t) {
-  return t.h + t.mi / 60;
 }
 
 function generateSlots(date, busy) {
