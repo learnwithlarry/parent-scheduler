@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule Your Sessions — Learn with Larry</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=mont@400,500,600,700,800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:       #29B8F5;
+    --blue-dark:  #18A0DB;
+    --blue-pale:  #E8F7FE;
+    --blue-hover: #D4EFFC;
+    --black:      #111111;
+    --gray-dark:  #374151;
+    --gray:       #6B7280;
+    --gray-light: #D1D5DB;
+    --white:      #FFFFFF;
+    --bg:         #F2FAFE;
+    --red:        #DC2626;
+    --green:      #16A34A;
+  }
+
+  body {
+    font-family: 'Mont', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--black);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--blue);
+    color: var(--white);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .header-logo {
+    width: 42px; height: 42px;
+    background: rgba(255,255,255,0.22);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: var(--white);
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 16px; font-weight: 800; letter-spacing: 0.01em; }
+  .header p  { font-size: 12px; opacity: 0.85; margin-top: 1px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* ── Layout ── */
+  .container { max-width: 720px; margin: 0 auto; padding: 28px 18px 60px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(41,184,245,0.08);
+    border: 1px solid rgba(41,184,245,0.12);
+  }
+  .card-title {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--blue); margin-bottom: 16px;
+  }
+
+  /* ── Field ── */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block; font-size: 13px; font-weight: 700;
+    margin-bottom: 6px; color: var(--gray-dark);
+  }
+  .field input, .field select {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid var(--gray-light); border-radius: 9px;
+    font-size: 14px; font-family: inherit; color: var(--black);
+    outline: none; transition: border-color 0.15s;
+    background: var(--white); appearance: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--blue); }
+  .field input.error { border-color: var(--red); }
+
+  /* ── Child tabs ── */
+  .children-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 20px; align-items: center;
+  }
+  .child-tab {
+    padding: 7px 16px; border-radius: 20px;
+    border: 1.5px solid var(--gray-light);
+    background: var(--white); color: var(--gray);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.14s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .child-tab.active {
+    background: var(--blue); border-color: var(--blue); color: var(--white);
+  }
+  .child-tab .tab-close {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800;
+    cursor: pointer; transition: background 0.12s;
+    flex-shrink: 0; line-height: 1;
+  }
+  .child-tab .tab-close:hover { background: rgba(0,0,0,0.15); }
+  .add-child-btn {
+    padding: 7px 14px; border-radius: 20px;
+    border: 1.5px dashed var(--blue);
+    background: transparent; color: var(--blue);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.14s;
+  }
+  .add-child-btn:hover { background: var(--blue-pale); }
+
+  /* ── Mode toggle ── */
+  .mode-tabs {
+    display: flex; border: 1.5px solid var(--gray-light);
+    border-radius: 10px; overflow: hidden; margin-bottom: 18px;
+  }
+  .mode-tab {
+    flex: 1; padding: 10px 10px; border: none;
+    background: var(--white); font-family: inherit;
+    font-size: 12px; font-weight: 700; color: var(--gray);
+    cursor: pointer; transition: all 0.14s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .mode-tab:first-child { border-right: 1.5px solid var(--gray-light); }
+  .mode-tab.active { background: var(--blue); color: var(--white); }
+
+  /* ── Dow buttons ── */
+  .dow-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 14px;
+  }
+  .dow-btn {
+    aspect-ratio: 1; border: 1.5px solid var(--gray-light);
+    border-radius: 8px; background: var(--white);
+    font-family: inherit; font-size: 11px; font-weight: 700;
+    color: var(--gray); cursor: pointer; transition: all 0.13s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dow-btn:hover:not(.disabled) { border-color: var(--blue); color: var(--blue); }
+  .dow-btn.active { background: var(--blue); border-color: var(--blue); color: var(--white); }
+  .dow-btn.disabled { color: var(--gray-light); cursor: default; border-color: #F3F4F6; background: #F9FAFB; }
+
+  .recur-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .apply-btn {
+    width: 100%; padding: 11px; background: var(--blue); color: var(--white);
+    border: none; border-radius: 9px; font-family: inherit;
+    font-size: 13px; font-weight: 800; cursor: pointer; transition: background 0.14s;
+    letter-spacing: 0.02em;
+  }
+  .apply-btn:hover { background: var(--blue-dark); }
+
+  .recur-preview {
+    margin-top: 12px; background: var(--blue-pale);
+    border-radius: 9px; padding: 11px 13px;
+    font-size: 13px; color: var(--gray-dark); display: none; line-height: 1.6;
+  }
+  .recur-preview.visible { display: block; }
+  .recur-preview strong { color: var(--blue-dark); font-weight: 800; }
+
+  /* ── Calendar ── */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-month { font-size: 16px; font-weight: 800; }
+  .cal-nav { display: flex; gap: 5px; }
+  .cal-nav button {
+    width: 30px; height: 30px; border: 1.5px solid var(--gray-light);
+    border-radius: 7px; background: var(--white); cursor: pointer;
+    font-size: 14px; color: var(--gray);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .cal-nav button:hover { border-color: var(--blue); color: var(--blue); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow {
+    text-align: center; font-size: 10px; font-weight: 800;
+    letter-spacing: 0.07em; color: var(--gray);
+    padding: 3px 0 7px; text-transform: uppercase;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 9px; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    transition: background 0.12s, color 0.12s;
+    border: 2px solid transparent; user-select: none;
+  }
+  .cal-day:hover:not(.empty):not(.past):not(.sunday) {
+    background: var(--blue-hover); border-color: var(--blue);
+  }
+  .cal-day.selected {
+    background: var(--blue) !important; color: var(--white) !important;
+    border-color: var(--blue) !important; font-weight: 800;
+  }
+  .cal-day.recur-selected {
+    background: var(--blue-pale) !important; border-color: var(--blue) !important;
+    color: var(--blue-dark) !important; font-weight: 800;
+  }
+  .cal-day.recur-selected.selected {
+    background: var(--blue) !important; color: var(--white) !important;
+  }
+  .cal-day.empty, .cal-day.past, .cal-day.sunday { cursor: default; color: var(--gray-light); }
+  .cal-day.sunday { color: #FCA5A5; }
+  .cal-day.today { border-color: var(--blue); color: var(--blue-dark); font-weight: 800; }
+  .day-dot {
+    width: 4px; height: 4px; background: rgba(255,255,255,0.8);
+    border-radius: 50%; margin-top: 2px; visibility: hidden;
+  }
+  .cal-day.selected .day-dot { visibility: visible; }
+
+  /* ── Time row ── */
+  .time-row {
+    grid-column: 1 / -1; background: var(--blue-pale);
+    border-radius: 10px; padding: 10px 9px;
+    display: none; flex-wrap: wrap; gap: 5px;
+    margin: 2px 0; animation: slideIn 0.14s ease;
+  }
+  .time-row.visible { display: flex; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .time-row-label {
+    width: 100%; font-size: 10px; font-weight: 800;
+    color: var(--blue-dark); margin-bottom: 3px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .time-chip {
+    padding: 4px 10px; border-radius: 16px;
+    border: 1.5px solid var(--blue); background: var(--white); color: var(--blue);
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    transition: all 0.12s; font-family: inherit;
+  }
+  .time-chip:hover:not(.booked) { background: var(--blue); color: var(--white); }
+  .time-chip.selected-time { background: var(--blue); color: var(--white); }
+  .time-chip.booked {
+    background: #F3F4F6; color: var(--gray-light);
+    border-color: var(--gray-light); cursor: not-allowed; text-decoration: line-through;
+  }
+  .time-loading { font-size: 12px; color: var(--gray); font-style: italic; padding: 3px 0; }
+
+  /* ── Summary ── */
+  .summary-empty { text-align: center; color: var(--gray); font-size: 13px; padding: 14px 0; }
+  .summary-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--blue-pale);
+  }
+  .summary-item:last-child { border-bottom: none; }
+  .summary-date { min-width: 110px; font-size: 13px; font-weight: 700; }
+  .summary-times { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .summary-tag {
+    background: var(--blue-pale); color: var(--blue-dark);
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  }
+  .summary-no-time { font-size: 12px; color: var(--gray); font-style: italic; }
+  .summary-remove {
+    background: none; border: none; color: var(--gray-light);
+    cursor: pointer; font-size: 15px; transition: color 0.12s; padding: 1px;
+  }
+  .summary-remove:hover { color: var(--red); }
+
+  /* ── Child summary section ── */
+  .child-summary-block { margin-bottom: 16px; }
+  .child-summary-header {
+    font-size: 12px; font-weight: 800; color: var(--blue-dark);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--blue-pale);
+  }
+
+  /* ── Submit ── */
+  .submit-btn {
+    width: 100%; padding: 15px; background: var(--blue); color: var(--white);
+    border: none; border-radius: 12px; font-family: inherit;
+    font-size: 15px; font-weight: 800; cursor: pointer;
+    transition: background 0.15s; letter-spacing: 0.02em;
+  }
+  .submit-btn:hover { background: var(--blue-dark); }
+  .submit-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+
+  .status {
+    border-radius: 9px; padding: 12px 14px;
+    font-size: 13px; font-weight: 600; margin-top: 12px; display: none;
+  }
+  .status.success   { background: #DCFCE7; color: var(--green); display: block; }
+  .status.error-msg { background: #FEF2F2; color: var(--red); display: block; }
+
+  .config-notice {
+    background: #FFFBEB; border: 1.5px solid #FCD34D;
+    border-radius: 10px; padding: 11px 14px;
+    font-size: 12px; color: #92400E; margin-bottom: 18px; line-height: 1.6;
+  }
+  .helper { font-size: 12px; color: var(--gray); margin-top: 8px; line-height: 1.5; }
+  .divider { height: 1px; background: var(--blue-pale); margin: 16px 0; }
+
+  @media (max-width: 480px) {
+    .recur-row { grid-template-columns: 1fr; }
+    .card { padding: 18px 14px; }
+    .cal-day { font-size: 11px; }
+    .time-chip { font-size: 10px; padding: 3px 7px; }
+    .child-tab { font-size: 12px; padding: 6px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ CONFIG — fill in before deploying ═══════════════ -->
+<script>
+const CONFIG = {
+  SUBMIT_ENDPOINT:    "https://lwl-notion-proxy.larry-109.workers.dev",
+  GOOGLE_ICAL_URL:    "https://calendar.google.com/calendar/ical/larry%40learnwithlarry.me/private-6a046e731a275c181ad795042b10f0e2/basic.ics",
+  SLOT_START_HOUR: 9,
+  SLOT_END_HOUR:  20,
+  SLOT_INTERVAL:  15,
+};
+</script>
+<!-- ══════════════════════════════════════════════════════════════════ -->
+
+<div class="header">
+  <div class="header-logo">L</div>
+  <div>
+    <h1>Schedule Your Sessions</h1>
+    <p>Learn with Larry — Parent Portal</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="config-notice" id="configNotice" style="display:none">
+    ⚙️ <strong>Setup needed:</strong> Fill in <strong>SUBMIT_ENDPOINT</strong>
+    and <strong>GOOGLE_ICAL_URL</strong> in the CONFIG block at the top of this file.
+  </div>
+
+  <!-- 1. Parent name -->
+  <div class="card">
+    <div class="card-title">Your Name</div>
+    <div class="field">
+      <label for="parentName">Parent / Guardian Name</label>
+      <input type="text" id="parentName" placeholder="e.g. Jane Kim" autocomplete="name">
+    </div>
+  </div>
+
+  <!-- 2. Children tabs + scheduler -->
+  <div class="card">
+    <div class="card-title">Students' Schedules</div>
+
+    <!-- Child tabs -->
+    <div class="children-tabs" id="childrenTabs"></div>
+
+    <!-- Per-child editor (re-rendered when tab switches) -->
+    <div id="childEditor"></div>
+  </div>
+
+  <!-- 3. Full summary -->
+  <div class="card">
+    <div class="card-title">Full Submission Summary</div>
+    <div id="fullSummary"><div class="summary-empty">No dates selected yet.</div></div>
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="submitSchedule()">Send Schedule to Larry</button>
+  <div class="status" id="statusMsg"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// Data model
+// children = [ { id, name, mode, selectedDates, recurDates, selectedDows, recurTime, openTimeRow } ]
+// selectedDates = { "YYYY-MM-DD": Set<string> }
+// ─────────────────────────────────────────────────────────────
+let children = [];
+let activeChildId = null;
+let childCounter = 0;
+let viewYear, viewMonth;
+const busyCache = {};
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// ── Init ─────────────────────────────────────────────────────
+(function init() {
+  if (Object.values(CONFIG).some(v => String(v).startsWith("YOUR_")))
+    document.getElementById("configNotice").style.display = "block";
+
+  const now = new Date();
+  if (now.getMonth() === 11) { viewYear = now.getFullYear() + 1; viewMonth = 0; }
+  else { viewYear = now.getFullYear(); viewMonth = now.getMonth() + 1; }
+
+  addChild("Student 1");
+})();
+
+// ── Children management ───────────────────────────────────────
+function addChild(defaultName) {
+  const id = ++childCounter;
+  children.push({
+    id,
+    name: defaultName || `Student ${id}`,
+    mode: "recur",
+    selectedDates: {},
+    recurDates: new Set(),
+    selectedDows: new Set(),
+    recurTime: "",
+    openTimeRow: null,
+  });
+  activeChildId = id;
+  renderTabs();
+  renderEditor();
+}
+
+function removeChild(id) {
+  if (children.length === 1) return; // keep at least one
+  children = children.filter(c => c.id !== id);
+  if (activeChildId === id) activeChildId = children[0].id;
+  renderTabs();
+  renderEditor();
+  renderFullSummary();
+}
+
+function switchChild(id) {
+  activeChildId = id;
+  renderTabs();
+  renderEditor();
+}
+
+function getActive() { return children.find(c => c.id === activeChildId); }
+
+// ── Tabs ──────────────────────────────────────────────────────
+function renderTabs() {
+  const container = document.getElementById("childrenTabs");
+  container.innerHTML = "";
+  children.forEach(child => {
+    const tab = document.createElement("button");
+    tab.className = "child-tab" + (child.id === activeChildId ? " active" : "");
+    tab.onclick = () => switchChild(child.id);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = child.name;
+    tab.appendChild(nameSpan);
+
+    if (children.length > 1) {
+      const close = document.createElement("span");
+      close.className = "tab-close";
+      close.textContent = "✕";
+      close.title = `Remove ${child.name}`;
+      close.onclick = (e) => { e.stopPropagation(); removeChild(child.id); };
+      tab.appendChild(close);
+    }
+    container.appendChild(tab);
+  });
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-child-btn";
+  addBtn.textContent = "+ Add Student";
+  addBtn.onclick = () => {
+    const n = children.length + 1;
+    addChild(`Student ${n}`);
+  };
+  container.appendChild(addBtn);
+}
+
+// ── Editor ────────────────────────────────────────────────────
+function renderEditor() {
+  const child = getActive();
+  const editor = document.getElementById("childEditor");
+  editor.innerHTML = "";
+
+  // Child name field
+  const nameField = document.createElement("div");
+  nameField.className = "field";
+  nameField.innerHTML = `<label>Student's Name</label>
+    <input type="text" id="childName_${child.id}" value="${escHtml(child.name)}"
+      placeholder="e.g. Alex Kim"
+      oninput="updateChildName(${child.id}, this.value)">`;
+  editor.appendChild(nameField);
+
+  const divider = document.createElement("div");
+  divider.className = "divider";
+  editor.appendChild(divider);
+
+  // Mode tabs
+  const modeTabs = document.createElement("div");
+  modeTabs.className = "mode-tabs";
+  modeTabs.innerHTML = `
+    <button class="mode-tab ${child.mode==='recur'?'active':''}" onclick="setMode(${child.id},'recur')">
+      🔁 Recurring (same day/time weekly)
+    </button>
+    <button class="mode-tab ${child.mode==='manual'?'active':''}" onclick="setMode(${child.id},'manual')">
+      📅 Pick Dates Manually
+    </button>`;
+  editor.appendChild(modeTabs);
+
+  // Recurring panel
+  if (child.mode === "recur") {
+    const panel = document.createElement("div");
+
+    // DoW buttons
+    const dowGrid = document.createElement("div");
+    dowGrid.className = "dow-grid";
+    ["Su","Mo","Tu","We","Th","Fr","Sa"].forEach((label, dow) => {
+      const btn = document.createElement("button");
+      btn.className = "dow-btn" + (dow === 0 ? " disabled" : "") + (child.selectedDows.has(dow) ? " active" : "");
+      btn.textContent = label;
+      btn.dataset.dow = dow;
+      btn.title = dow === 0 ? "Sundays not available" : "";
+      if (dow !== 0) btn.onclick = () => toggleDow(child.id, dow, btn);
+      dowGrid.appendChild(btn);
+    });
+    panel.appendChild(dowGrid);
+
+    // Time select + apply
+    const recurRow = document.createElement("div");
+    recurRow.className = "recur-row";
+
+    const timeField = document.createElement("div");
+    timeField.className = "field";
+    timeField.innerHTML = `<label>Preferred Time</label>
+      <select id="recurTime_${child.id}" onchange="updateRecurTime(${child.id}, this.value)">
+        <option value="">— Select time —</option>
+      </select>`;
+    recurRow.appendChild(timeField);
+
+    const applyField = document.createElement("div");
+    applyField.className = "field";
+    applyField.innerHTML = `<label>&nbsp;</label>
+      <button class="apply-btn" onclick="applyRecurring(${child.id})">Apply to Calendar →</button>`;
+    recurRow.appendChild(applyField);
+    panel.appendChild(recurRow);
+
+    // Populate time select
+    const sel = timeField.querySelector("select");
+    populateTimeSelect(sel, child.recurTime);
+
+    // Preview
+    const preview = document.createElement("div");
+    preview.className = "recur-preview" + (child._previewText ? " visible" : "");
+    preview.id = `recurPreview_${child.id}`;
+    preview.innerHTML = child._previewText || "";
+    panel.appendChild(preview);
+
+    editor.appendChild(panel);
+  } else {
+    const manual = document.createElement("p");
+    manual.style.cssText = "font-size:13px;color:var(--gray);margin-bottom:14px;";
+    manual.textContent = "Click individual dates on the calendar below to select them, then pick time slots for each.";
+    editor.appendChild(manual);
+  }
+
+  // Calendar
+  const calDiv = document.createElement("div");
+  calDiv.style.marginTop = "18px";
+  calDiv.innerHTML = `
+    <div class="cal-header">
+      <div class="cal-month" id="calMonth_${child.id}"></div>
+      <div class="cal-nav">
+        <button onclick="changeMonth(${child.id},-1)">‹</button>
+        <button onclick="changeMonth(${child.id},1)">›</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid_${child.id}"></div>
+    <p class="helper" id="calHelper_${child.id}"></p>`;
+  editor.appendChild(calDiv);
+
+  renderCalendar(child.id);
+}
+
+function updateChildName(id, val) {
+  const child = children.find(c => c.id === id);
+  if (child) { child.name = val || `Student ${id}`; renderTabs(); renderFullSummary(); }
+}
+
+function setMode(id, mode) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  child.mode = mode;
+  if (mode === "manual") {
+    child.recurDates.forEach(k => delete child.selectedDates[k]);
+    child.recurDates.clear();
+    child.openTimeRow = null;
+    child._previewText = "";
+  }
+  renderEditor();
+  renderFullSummary();
+}
+
+function populateTimeSelect(sel, currentVal) {
+  const { SLOT_START_HOUR, SLOT_END_HOUR, SLOT_INTERVAL } = CONFIG;
+  for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
+    for (let m = 0; m < 60; m += SLOT_INTERVAL) {
+      if (h === SLOT_END_HOUR && m > 0) break;
+      const d = new Date(2000,0,1,h,m);
+      const label = d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true});
+      const opt = document.createElement("option");
+      opt.value = label; opt.textContent = label;
+      if (label === currentVal) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+function toggleDow(id, dow, btn) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  if (child.selectedDows.has(dow)) { child.selectedDows.delete(dow); btn.classList.remove("active"); }
+  else { child.selectedDows.add(dow); btn.classList.add("active"); }
+}
+
+function updateRecurTime(id, val) {
+  const child = children.find(c => c.id === id);
+  if (child) child.recurTime = val;
+}
+
+function applyRecurring(id) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  const timeVal = child.recurTime || document.getElementById(`recurTime_${id}`)?.value;
+  if (child.selectedDows.size === 0) { alert("Please select at least one day of the week."); return; }
+  if (!timeVal) { alert("Please select a time slot."); return; }
+  child.recurTime = timeVal;
+
+  child.recurDates.forEach(k => delete child.selectedDates[k]);
+  child.recurDates.clear();
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const found = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    if (date < today) continue;
+    if (child.selectedDows.has(date.getDay())) {
+      const key = toKey(viewYear, viewMonth, d);
+      child.selectedDates[key] = new Set([timeVal]);
+      child.recurDates.add(key);
+      found.push(date.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}));
+    }
+  }
+
+  const dowLabels = [...child.selectedDows].sort().map(d => DAY_NAMES[d]).join(", ");
+  const preview = document.getElementById(`recurPreview_${id}`);
+  if (preview) {
+    if (found.length) {
+      child._previewText = `<strong>${dowLabels} @ ${timeVal}</strong> — ${found.length} session${found.length>1?"s":""} added:<br><span style="color:var(--gray)">${found.join(" · ")}</span>`;
+    } else {
+      child._previewText = `<strong>No available ${dowLabels} dates in ${MONTH_NAMES[viewMonth]} ${viewYear}.</strong>`;
+    }
+    preview.innerHTML = child._previewText;
+    preview.classList.add("visible");
+  }
+
+  child.openTimeRow = null;
+  renderCalendar(id);
+  renderFullSummary();
+}
+
+// ── Calendar ──────────────────────────────────────────────────
+function changeMonth(id, delta) {
+  viewMonth += delta;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+  // Re-apply recurring for all children that have recur fills
+  children.forEach(c => {
+    if (c.mode === "recur" && c.recurDates.size > 0) applyRecurring(c.id);
+  });
+  renderEditor();
+}
+
+function renderCalendar(id) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  const monthEl  = document.getElementById(`calMonth_${id}`);
+  const grid     = document.getElementById(`calGrid_${id}`);
+  const helperEl = document.getElementById(`calHelper_${id}`);
+  if (!monthEl || !grid) return;
+
+  monthEl.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+  if (helperEl) {
+    helperEl.textContent = child.mode === "recur"
+      ? "Highlighted dates are from your recurring selection. Click any date to fine-tune time slots."
+      : "Click a date to select it, then choose time slots.";
+  }
+  grid.innerHTML = "";
+
+  DAY_NAMES.forEach(d => {
+    const el = document.createElement("div"); el.className = "cal-dow"; el.textContent = d; grid.appendChild(el);
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement("div"); el.className = "cal-day empty"; grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    const key  = toKey(viewYear, viewMonth, d);
+    const dow  = date.getDay();
+    const isPast  = date < today;
+    const isToday = date.getTime() === today.getTime();
+
+    const el = document.createElement("div");
+    el.className = "cal-day";
+    if (dow === 0)      el.classList.add("sunday");
+    else if (isPast)    el.classList.add("past");
+    if (isToday)        el.classList.add("today");
+    if (child.selectedDates[key]) el.classList.add("selected");
+    if (child.recurDates.has(key)) el.classList.add("recur-selected");
+
+    el.textContent = d;
+    const dot = document.createElement("div"); dot.className = "day-dot"; el.appendChild(dot);
+
+    if (dow !== 0 && !isPast) el.onclick = () => handleDayClick(id, key, date);
+    grid.appendChild(el);
+
+    if (child.openTimeRow === key) {
+      const row = buildTimeRow(id, key, date);
+      grid.appendChild(row);
+      loadBusyAndPopulate(id, key, date, row);
+    }
+  }
+}
+
+function handleDayClick(id, key, date) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  if (child.selectedDates[key] && child.openTimeRow === key) {
+    delete child.selectedDates[key];
+    child.recurDates.delete(key);
+    child.openTimeRow = null;
+  } else if (child.selectedDates[key]) {
+    child.openTimeRow = key;
+  } else {
+    child.selectedDates[key] = new Set();
+    child.openTimeRow = key;
+  }
+  renderCalendar(id);
+  renderFullSummary();
+}
+
+// ── Time rows ─────────────────────────────────────────────────
+function buildTimeRow(id, key, date) {
+  const row = document.createElement("div");
+  row.className = "time-row visible";
+  row.id = `timerow_${id}_${key}`;
+  const label = document.createElement("div");
+  label.className = "time-row-label";
+  label.textContent = date.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+  row.appendChild(label);
+  const loading = document.createElement("div");
+  loading.className = "time-loading"; loading.textContent = "Loading availability…";
+  loading.id = `loading_${id}_${key}`;
+  row.appendChild(loading);
+  return row;
+}
+
+function loadBusyAndPopulate(id, key, date, row) {
+  const cKey = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}`;
+  const populate = (busy) => {
+    const loadEl = document.getElementById(`loading_${id}_${key}`);
+    if (loadEl) loadEl.remove();
+    const child = children.find(c => c.id === id);
+    generateSlots(date, busy).forEach(slot => {
+      const chip = document.createElement("button");
+      chip.className = "time-chip" + (slot.booked ? " booked" : "");
+      chip.textContent = slot.label;
+      chip.disabled = slot.booked;
+      if (!slot.booked) {
+        if (child && child.selectedDates[key] && child.selectedDates[key].has(slot.label))
+          chip.classList.add("selected-time");
+        chip.onclick = () => toggleTime(id, key, slot.label, chip);
+      }
+      row.appendChild(chip);
+    });
+  };
+
+  if (busyCache[cKey]) { populate(busyCache[cKey]); return; }
+
+  fetchIcalBusyBlocks()
+    .then(busy => { busyCache[cKey] = busy; populate(busy); })
+    .catch(() => { busyCache[cKey] = []; populate([]); });
+}
+
+// ── iCal feed fetching & parsing ────────────────────────────────
+// Google's public iCal feeds don't send CORS headers, so browsers can't
+// fetch them directly from client-side JS. We route through a free public
+// CORS proxy (allorigins.win) to read the raw .ics text.
+let icalCachePromise = null;
+function fetchIcalBusyBlocks() {
+  if (icalCachePromise) return icalCachePromise;
+
+  const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.GOOGLE_ICAL_URL)}`;
+
+  icalCachePromise = fetch(proxied)
+    .then(r => r.text())
+    .then(text => parseIcalToBusyBlocks(text))
+    .catch(err => { icalCachePromise = null; throw err; });
+
+  return icalCachePromise;
+}
+
+function parseIcalToBusyBlocks(icsText) {
+  const events = [];
+  // Normalize line folding (iCal wraps long lines with a leading space)
+  const unfolded = icsText.replace(/\r\n /g, "").replace(/\n /g, "");
+  const lines = unfolded.split(/\r\n|\n/);
+
+  let current = null;
+  for (const line of lines) {
+    if (line.startsWith("BEGIN:VEVENT")) {
+      current = {};
+    } else if (line.startsWith("END:VEVENT")) {
+      if (current && current.start && current.end) events.push(current);
+      current = null;
+    } else if (current) {
+      if (line.startsWith("DTSTART")) current.start = parseIcalDate(line);
+      else if (line.startsWith("DTEND")) current.end = parseIcalDate(line);
+      else if (line.startsWith("STATUS:CANCELLED")) current.cancelled = true;
+    }
+  }
+
+  return events.filter(e => !e.cancelled && e.start && e.end);
+}
+
+function parseIcalDate(line) {
+  // Examples:
+  //   DTSTART:20260715T160000Z
+  //   DTSTART;TZID=America/Los_Angeles:20260715T160000
+  //   DTSTART;VALUE=DATE:20260715   (all-day event)
+  const valuePart = line.split(":").pop().trim();
+
+  if (/^\d{8}$/.test(valuePart)) {
+    // All-day date only: YYYYMMDD
+    const y = +valuePart.slice(0,4), m = +valuePart.slice(4,6), d = +valuePart.slice(6,8);
+    return new Date(y, m - 1, d);
+  }
+
+  // YYYYMMDDTHHMMSS or YYYYMMDDTHHMMSSZ
+  const match = valuePart.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+  if (!match) return null;
+  const [, y, mo, d, h, mi, s, isUtc] = match;
+  if (isUtc) {
+    return new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
+  }
+  // Treat as local time (close enough for free/busy display purposes)
+  return new Date(+y, +mo - 1, +d, +h, +mi, +s);
+}
+
+function generateSlots(date, busy) {
+  const slots = [];
+  const { SLOT_START_HOUR, SLOT_END_HOUR, SLOT_INTERVAL } = CONFIG;
+  for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
+    for (let m = 0; m < 60; m += SLOT_INTERVAL) {
+      if (h === SLOT_END_HOUR && m > 0) break;
+      const s = new Date(date.getFullYear(),date.getMonth(),date.getDate(),h,m);
+      const e = new Date(s.getTime() + SLOT_INTERVAL*60000);
+      const label = s.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true});
+      slots.push({ label, booked: busy.some(b => s < b.end && e > b.start) });
+    }
+  }
+  return slots;
+}
+
+function toggleTime(id, key, label, chip) {
+  const child = children.find(c => c.id === id);
+  if (!child || !child.selectedDates[key]) return;
+  if (child.selectedDates[key].has(label)) { child.selectedDates[key].delete(label); chip.classList.remove("selected-time"); }
+  else { child.selectedDates[key].add(label); chip.classList.add("selected-time"); }
+  renderFullSummary();
+}
+
+// ── Full summary ──────────────────────────────────────────────
+function renderFullSummary() {
+  const container = document.getElementById("fullSummary");
+  const hasAny = children.some(c => Object.keys(c.selectedDates).length > 0);
+  if (!hasAny) { container.innerHTML = '<div class="summary-empty">No dates selected yet.</div>'; return; }
+
+  container.innerHTML = children.filter(c => Object.keys(c.selectedDates).length > 0).map(child => {
+    const keys = Object.keys(child.selectedDates).sort();
+    const rows = keys.map(key => {
+      const [y,m,d] = key.split("-").map(Number);
+      const date = new Date(y,m-1,d);
+      const dateStr = date.toLocaleDateString("en-US",{weekday:"short",month:"long",day:"numeric"});
+      const times = [...(child.selectedDates[key]||[])].sort();
+      const timeTags = times.length
+        ? times.map(t=>`<span class="summary-tag">${t}</span>`).join("")
+        : `<span class="summary-no-time">No time selected</span>`;
+      return `<div class="summary-item">
+        <div class="summary-date">${dateStr}</div>
+        <div class="summary-times">${timeTags}</div>
+        <button class="summary-remove" onclick="removeDateFromSummary(${child.id},'${key}')" title="Remove">✕</button>
+      </div>`;
+    }).join("");
+    return `<div class="child-summary-block">
+      <div class="child-summary-header">${escHtml(child.name)}</div>
+      ${rows}
+    </div>`;
+  }).join("");
+}
+
+function removeDateFromSummary(id, key) {
+  const child = children.find(c => c.id === id);
+  if (!child) return;
+  delete child.selectedDates[key];
+  child.recurDates.delete(key);
+  if (child.openTimeRow === key) child.openTimeRow = null;
+  renderCalendar(id);
+  renderFullSummary();
+}
+
+// ── Submit ────────────────────────────────────────────────────
+async function submitSchedule() {
+  const nameEl = document.getElementById("parentName");
+  const statusEl = document.getElementById("statusMsg");
+  const btn = document.getElementById("submitBtn");
+
+  nameEl.classList.remove("error");
+  if (!nameEl.value.trim()) { nameEl.classList.add("error"); nameEl.focus(); return; }
+  const hasAny = children.some(c => Object.keys(c.selectedDates).length > 0);
+  if (!hasAny) {
+    statusEl.className = "status error-msg";
+    statusEl.textContent = "Please select at least one date before submitting.";
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = "Sending…"; statusEl.className = "status";
+
+  // Build one entry per student (each becomes its own Notion row)
+  const studentEntries = children
+    .filter(child => Object.keys(child.selectedDates).length > 0)
+    .map(child => {
+      const keys = Object.keys(child.selectedDates).sort();
+      let text = "";
+      if (child.recurDates.size > 0 && child.recurTime) {
+        const dowLabels = [...child.selectedDows].sort().map(d=>DAY_NAMES[d]).join(", ");
+        text += `Recurring: ${dowLabels} @ ${child.recurTime}\n`;
+      }
+      keys.forEach(key => {
+        const [y,m,d] = key.split("-").map(Number);
+        const date = new Date(y,m-1,d);
+        const dateStr = date.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+        const times = [...(child.selectedDates[key]||[])].sort();
+        text += `${dateStr}${times.length ? ": " + times.join(", ") : ""}\n`;
+      });
+      return { studentName: child.name, selectionText: text.trim() };
+    });
+
+  const payload = {
+    parentName: nameEl.value.trim(),
+    month: `${MONTH_NAMES[viewMonth]} ${viewYear}`,
+    students: studentEntries
+  };
+
+  try {
+    const res = await fetch(CONFIG.SUBMIT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      statusEl.className = "status success";
+      statusEl.textContent = `✓ Submitted! Larry will confirm your sessions for ${MONTH_NAMES[viewMonth]} ${viewYear} shortly.`;
+      // Reset
+      children.forEach(c => {
+        c.selectedDates = {}; c.recurDates.clear(); c.selectedDows.clear();
+        c.recurTime = ""; c.openTimeRow = null; c._previewText = "";
+      });
+      nameEl.value = "";
+      renderTabs(); renderEditor(); renderFullSummary();
+    } else {
+      throw new Error(data.error || "Submission failed");
+    }
+  } catch(err) {
+    statusEl.className = "status error-msg";
+    statusEl.textContent = `Something went wrong: ${err.message}. Please try again or contact Larry directly.`;
+  }
+  btn.disabled = false; btn.textContent = "Send Schedule to Larry";
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function toKey(y,m,d) { return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+</script>
+</body>
+</html>
