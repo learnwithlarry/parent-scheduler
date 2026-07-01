@@ -386,7 +386,7 @@ let children = [];
 let activeChildId = null;
 let childCounter = 0;
 let viewYear, viewMonth;
-const busyCache = {};
+
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -769,7 +769,6 @@ function buildTimeRow(id, key, date) {
 }
 
 function loadBusyAndPopulate(id, key, date, row) {
-  const cKey = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}`;
   const populate = (busy) => {
     const loadEl = document.getElementById(`loading_${id}_${key}`);
     if (loadEl) loadEl.remove();
@@ -788,11 +787,9 @@ function loadBusyAndPopulate(id, key, date, row) {
     });
   };
 
-  if (busyCache[cKey]) { populate(busyCache[cKey]); return; }
-
   fetchIcalBusyBlocks()
-    .then(busy => { busyCache[cKey] = busy; populate(busy); })
-    .catch(() => { busyCache[cKey] = []; populate([]); });
+    .then(busy => populate(busy))
+    .catch(() => populate([]));
 }
 
 // ── iCal feed fetching & parsing ────────────────────────────────
