@@ -817,43 +817,44 @@ function generateSlots(date, busy) {
   const slots = [];
   const { SLOT_START_HOUR, SLOT_END_HOUR, SLOT_INTERVAL } = CONFIG;
 
-  // Filter busy blocks to only those on this calendar date in Pacific time
   const y  = date.getFullYear();
-  const mo = date.getMonth() + 1;
+  const mo = date.getMonth() + 1; // 1-based to match block format from Worker
   const d  = date.getDate();
 
-  // For each busy block, figure out its Pacific-time span on this date
-  const dayBusy = busy.map(b => {
-    // All-day events block the whole day
-    if (b.start.allDay) {
-      // all-day end is exclusive (next day), so check if this date is within range
-      const startMs = Date.UTC(b.start.y, b.start.mo-1, b.start.d);
-      const endMs   = Date.UTC(b.end.y,   b.end.mo-1,   b.end.d);
-      const dayMs   = Date.UTC(y, mo-1, d);
-      if (dayMs >= startMs && dayMs < endMs) return { startH: 0, endH: 24 };
-      return null;
-    }
-    // Multi-day spanning events: clamp to this date
-    const startOnDay = (b.start.y === y && b.start.mo === mo && b.start.d === d);
-    const endOnDay   = (b.end.y   === y && b.end.mo   === mo && b.end.d   === d);
-    const spanDay    = (
-      Date.UTC(b.start.y, b.start.mo-1, b.start.d) <  Date.UTC(y, mo-1, d+1) &&
-      Date.UTC(b.end.y,   b.end.mo-1,   b.end.d)   >  Date.UTC(y, mo-1, d)
-    );
-    if (!spanDay) return null;
-    const startH = startOnDay ? toFractionalHour(b.start) : 0;
-    const endH   = endOnDay   ? toFractionalHour(b.end)   : 24;
-    return { startH, endH };
-  }).filter(Boolean);
+  // Use integer YYYYMMDD comparisons — avoids all timezone/Date.UTC issues
+  const dayInt = y * 10000 + mo * 100 + d;
 
+  function toInt(t)  { return t.y * 10000 + t.mo * 100 + t.d; }
+  function toMins(t) { return t.h * 60 + t.mi; }
+
+  // For each slot, determine its start/end in minutes-since-midnight
   for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
     for (let m = 0; m < 60; m += SLOT_INTERVAL) {
       if (h === SLOT_END_HOUR && m > 0) break;
-      const slotStart = h + m / 60;
-      const slotEnd   = slotStart + SLOT_INTERVAL / 60;
-      const label = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m)
+
+      const slotStartMins = h * 60 + m;
+      const slotEndMins   = slotStartMins + SLOT_INTERVAL;
+
+      const label = new Date(y, mo - 1, d, h, m)
         .toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit", hour12:true });
-      const booked = dayBusy.some(b => slotStart < b.endH && slotEnd > b.startH);
+
+      const booked = busy.some(b => {
+        const bStartInt = toInt(b.start);
+        const bEndInt   = toInt(b.end);
+
+        // Block must overlap this date at all
+        if (bStartInt > dayInt || bEndInt < dayInt) return false;
+        // All-day events block everything
+        if (b.start.allDay) return bStartInt <= dayInt && bEndInt > dayInt;
+
+        // Determine block's minute range on this specific date
+        const blockStartMins = bStartInt === dayInt ? toMins(b.start) : 0;
+        const blockEndMins   = bEndInt   === dayInt ? toMins(b.end)   : 24 * 60;
+
+        // Overlap: slot starts before block ends AND slot ends after block starts
+        return slotStartMins < blockEndMins && slotEndMins > blockStartMins;
+      });
+
       slots.push({ label, booked });
     }
   }
